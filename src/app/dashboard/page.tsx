@@ -25,9 +25,20 @@ import {
   DropdownMenuGroup,
   DropdownMenuItem,
   DropdownMenuLabel,
+  DropdownMenuSeparator,
   DropdownMenuShortcut,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Label } from "@radix-ui/react-dropdown-menu";
 
 const users = [
   {
@@ -221,13 +232,19 @@ function TableDemo() {
     dirección: "",
     mes_expensas: ".",
   });
+  const [invoiceData, setInvoiceData] = useState({
+    paymentType: "",
+    checkNumber: "",
+    bank: "",
+    amount: "",
+  });
 
   const usersPerPage = 15;
   const indexOfLastUser = currentPage * usersPerPage;
   const indexOfFirstUser = indexOfLastUser - usersPerPage;
   const currentUsers = filteredUsers.slice(indexOfFirstUser, indexOfLastUser);
 
-  const paginate = (pageNumber) => setCurrentPage(pageNumber);
+  const paginate = (pageNumber: number): void => setCurrentPage(pageNumber);
 
   useEffect(() => {
     const results = users.filter(
@@ -245,7 +262,9 @@ function TableDemo() {
     setCurrentPage(1);
   }, [filters]);
 
-  const handleFilterChange = (e) => {
+  interface FilterChangeEvent extends React.ChangeEvent<HTMLInputElement> {}
+
+  const handleFilterChange = (e: FilterChangeEvent): void => {
     const { name, value } = e.target;
     setFilters((prevFilters) => ({
       ...prevFilters,
@@ -253,29 +272,40 @@ function TableDemo() {
     }));
   };
 
-  const handleObservationChange = (index, value) => {
+  const handleObservationChange = (index: number, value: string): void => {
     const updatedUsers = [...filteredUsers];
     updatedUsers[indexOfFirstUser + index].observaciones = value;
     setFilteredUsers(updatedUsers);
+  };
+
+  interface InvoiceDataChangeEvent
+    extends React.ChangeEvent<HTMLInputElement> {}
+
+  const handleInvoiceDataChange = (e: InvoiceDataChangeEvent): void => {
+    const { name, value } = e.target;
+    setInvoiceData((prevData) => ({
+      ...prevData,
+      [name]: value,
+    }));
   };
 
   return (
     <div className="w-full flex flex-col items-center p-4">
       <div className="w-full max-w-4xl mb-4 flex gap-2">
         <Input
-          placeholder="Filtrar por apellido"
+          placeholder="Buscar apellido"
           name="apellido"
           value={filters.apellido}
           onChange={handleFilterChange}
         />
         <Input
-          placeholder="Filtrar por nombre"
+          placeholder="Buscar nombre"
           name="nombre"
           value={filters.nombre}
           onChange={handleFilterChange}
         />
         <Input
-          placeholder="Filtrar por sector"
+          placeholder="Buscar Dirección"
           name="dirección"
           value={filters.dirección}
           onChange={handleFilterChange}
@@ -320,8 +350,6 @@ function TableDemo() {
             <TableHead>Nombre</TableHead>
             <TableHead>Dirección</TableHead>
             <TableHead>Celular</TableHead>
-            <TableHead>Mes de expensas</TableHead>
-            <TableHead>Valor</TableHead>
             <TableHead>Observaciones</TableHead>
           </TableRow>
         </TableHeader>
@@ -332,8 +360,7 @@ function TableDemo() {
               <TableCell>{user.nombre}</TableCell>
               <TableCell>{user.dirección}</TableCell>
               <TableCell>{user.celular}</TableCell>
-              <TableCell>{user.mes_expensas}</TableCell>
-              <TableCell>{user.valor}</TableCell>
+
               <TableCell>
                 <Textarea
                   value={user.observaciones}
@@ -344,31 +371,149 @@ function TableDemo() {
                 />
               </TableCell>
               <TableCell>
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" className="font-bold">
-                      ···
+                <div className="w-48 p-3">
+                  <div className="space-y-3">
+                    <Dialog>
+                      <DialogTrigger asChild>
+                        <Button className="bg-black cursor-pointer hover:bg-white w-full hover:text-black hover:border hover:border-black">
+                          Realizar factura
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent>
+                        <DialogHeader>
+                          <DialogTitle>
+                            Crear Factura para{" "}
+                            <b>
+                              {user.nombre} {user.apellido}
+                            </b>{" "}
+                            del <b>{user.dirección}</b>
+                          </DialogTitle>
+                        </DialogHeader>
+                        <div className="space-y-4">
+                          <div>
+                            <Label htmlFor="paymentType">Tipo de pago</Label>
+                            <Select
+                              name="paymentType"
+                              value={invoiceData.paymentType}
+                              onValueChange={(value) =>
+                                handleInvoiceDataChange({
+                                  target: { name: "paymentType", value },
+                                })
+                              }>
+                              <SelectTrigger id="paymentType">
+                                <SelectValue placeholder="Seleccione el tipo de pago" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="efectivo">
+                                  Efectivo
+                                </SelectItem>
+                                <SelectItem value="transferencia">
+                                  Transferencia
+                                </SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          {invoiceData.paymentType === "efectivo" && (
+                            <>
+                              <div>
+                                <Label htmlFor="checkNumber">
+                                  Número de cheque
+                                </Label>
+                                <Input
+                                  id="checkNumber"
+                                  name="checkNumber"
+                                  value={invoiceData.checkNumber}
+                                  onChange={handleInvoiceDataChange}
+                                  placeholder="Ingrese el número de cheque"
+                                />
+                              </div>
+                              <div>
+                                <Label htmlFor="bank">Banco</Label>
+                                <Input
+                                  id="bank"
+                                  name="bank"
+                                  value={invoiceData.bank}
+                                  onChange={handleInvoiceDataChange}
+                                  placeholder="Ingrese el nombre del banco"
+                                />
+                              </div>
+                            </>
+                          )}
+                          <div>
+                            <Label>
+                              en concepto de:{" "}
+                              <span className="font-bold italic">Expensas</span>
+                            </Label>
+                            <Select
+                              name="mes_expensas"
+                              // value={filters.mes_expensas}
+                              // onValueChange={(value) =>
+                              //   handleFilterChange({
+                              //     target: { name: "mes_expensas", value },
+                              //   })
+                              // }
+                              >
+                              <SelectTrigger>
+                                <SelectValue placeholder="Mes de expensas" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value=".">Todos</SelectItem>
+                                {[
+                                  "Enero",
+                                  "Febrero",
+                                  "Marzo",
+                                  "Abril",
+                                  "Mayo",
+                                  "Junio",
+                                  "Julio",
+                                  "Agosto",
+                                  "Septiembre",
+                                  "Octubre",
+                                  "Noviembre",
+                                  "Diciembre",
+                                ].map((mes) => (
+                                  <SelectItem
+                                    key={mes}
+                                    value={mes.toLowerCase()}>
+                                    {mes}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          <div>
+                            <Label htmlFor="amount">Importe</Label>
+                            <Input
+                              id="amount"
+                              name="amount"
+                              type="number"
+                              value={invoiceData.amount}
+                              onChange={handleInvoiceDataChange}
+                              placeholder="Ingrese el importe"
+                            />
+                          </div>
+                        </div>
+                        <DialogFooter>
+                          <Button className="w-full bg-black hover:bg-white hover:border hover:border-black hover:text-black">Descargar Factura</Button>
+                        </DialogFooter>
+                      </DialogContent>
+                    </Dialog>
+
+                    <Button className="bg-white text-black w-full hover:bg-white hover:border hover:border-black">
+                      Editar
                     </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent className="w-full p-3">
-                  <DropdownMenuLabel>{user.nombre} {user.apellido}</DropdownMenuLabel>
-                    <DropdownMenuGroup>
-                      <DropdownMenuItem>
-                        <span>Editar</span>
-                      </DropdownMenuItem>
-                      <DropdownMenuItem className="bg-transparent text-red-600 focus:bg-red-600 focus:text-white">
-                        <span>Eliminar</span>
-                      </DropdownMenuItem>
-                    </DropdownMenuGroup>
-                  </DropdownMenuContent>
-                </DropdownMenu>
+                    <Button className="bg-red-600 text-white w-full hover:bg-white hover:text-red-600 hover:border hover:border-red-600 focus:text-white">
+                      <span>Eliminar</span>
+                    </Button>
+                  </div>
+                </div>
               </TableCell>
             </TableRow>
           ))}
         </TableBody>
       </Table>
 
-      <div className="flex mt-4 gap-2">
+      <div className="flex mt-4 gap-2 ">
         {Array.from(
           { length: Math.ceil(filteredUsers.length / usersPerPage) },
           (_, i) => (
